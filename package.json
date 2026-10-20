@@ -1,6 +1,6 @@
 {
   "name": "@guilhermeqmaia/oficina-kit",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Kit compartilhado dos microsservicos da Oficina Mecanica (Tech Challenge FIAP, Fase 4): auth resource server, logs JSON com correlacao, metricas, health, mensageria.",
   "license": "MIT",
   "repository": {
@@ -10,6 +10,31 @@
   "homepage": "https://github.com/guilhermeqmaia/soat-fiap-oficina-kit#readme",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "core": [
+        "dist/core/index.d.ts"
+      ],
+      "auth": [
+        "dist/auth/index.d.ts"
+      ],
+      "logging": [
+        "dist/logging/index.d.ts"
+      ],
+      "metrics": [
+        "dist/metrics/index.d.ts"
+      ],
+      "health": [
+        "dist/health/index.d.ts"
+      ],
+      "messaging": [
+        "dist/messaging/index.d.ts"
+      ],
+      "testing": [
+        "dist/testing/index.d.ts"
+      ]
+    }
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
