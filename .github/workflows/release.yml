@@ -1,0 +1,39 @@
+name: Release (npm)
+
+# Publica no npmjs.org quando uma tag `vX.Y.Z` e criada. A versao da tag
+# precisa bater com a do package.json. Primeira publicacao usa NPM_TOKEN;
+# depois de existir no registry, trocar por Trusted Publishing (OIDC) e
+# remover o token (ver README > Publicacao).
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: read
+  id-token: write # provenance / trusted publishing
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: npm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - name: Tag == package.json version
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"; PKG="$(node -p "require('./package.json').version")"
+          [ "$TAG" = "$PKG" ] || { echo "::error::tag v$TAG != package.json $PKG"; exit 1; }
+      - run: npm run test:cov
+      - run: npm run build
+      - name: Publish
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Resumo
+        run: echo "### Publicado \`$(node -p "require('./package.json').name")@$(node -p "require('./package.json').version")\` em https://www.npmjs.com/package/@guilhermeqmaia/oficina-kit" >> "$GITHUB_STEP_SUMMARY"

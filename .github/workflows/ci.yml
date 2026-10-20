@@ -1,0 +1,69 @@
+name: CI
+
+# Roda em todo PR (check obrigatorio da branch protegida) e nos pushes da main.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Lint, typecheck, testes e build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Formatacao (prettier)
+        run: npm run format
+      - name: Lint (eslint)
+        run: npm run lint
+      - name: Typecheck (tsc)
+        run: npm run typecheck
+      - name: Testes unitarios + cobertura (gate 80% no jest.config.ts)
+        run: npm run test:cov
+      - name: Build + smoke de instalacao do tarball
+        run: npm run pack:smoke
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/lcov.info
+          retention-days: 7
+      - name: Auditoria de dependencias
+        run: npm audit --omit=dev --audit-level=high
+
+  sonarcloud:
+    name: SonarCloud (quality gate)
+    runs-on: ubuntu-latest
+    needs: quality
+    # So roda quando o SONAR_TOKEN existir (ADR-0011 / US-F4-13).
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - run: npm run test:cov
+      - name: Analise
+        if: ${{ env.SONAR_TOKEN != '' }}
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      - name: Sem SONAR_TOKEN
+        if: ${{ env.SONAR_TOKEN == '' }}
+        run: echo "::warning::SONAR_TOKEN ausente — analise do SonarCloud pulada (US-F4-13)."
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
