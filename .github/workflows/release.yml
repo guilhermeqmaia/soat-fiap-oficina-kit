@@ -1,9 +1,9 @@
 name: Release (npm)
 
 # Publica no npmjs.org quando uma tag `vX.Y.Z` e criada. A versao da tag
-# precisa bater com a do package.json. Primeira publicacao usa NPM_TOKEN;
-# depois de existir no registry, trocar por Trusted Publishing (OIDC) e
-# remover o token (ver README > Publicacao).
+# precisa bater com a do package.json. Autenticacao por **Trusted Publishing**
+# (OIDC do GitHub Actions -> npm), configurado na pagina do pacote; nenhum
+# token. (A v0.1.0 foi publicada com NPM_TOKEN antes de o pacote existir.)
 
 on:
   push:
@@ -31,9 +31,9 @@ jobs:
           [ "$TAG" = "$PKG" ] || { echo "::error::tag v$TAG != package.json $PKG"; exit 1; }
       - run: npm run test:cov
       - run: npm run build
-      - name: Publish
+      - name: npm >= 11.5 (trusted publishing)
+        run: npm install -g npm@latest && npm -v
+      - name: Publish (OIDC)
         run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Resumo
         run: echo "### Publicado \`$(node -p "require('./package.json').name")@$(node -p "require('./package.json').version")\` em https://www.npmjs.com/package/@guilhermeqmaia/oficina-kit" >> "$GITHUB_STEP_SUMMARY"

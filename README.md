@@ -99,6 +99,40 @@ export const osTransicoes = new Counter({
 });
 ```
 
+### Mensageria (ADR-0009 / RFC-0006)
+
+```ts
+// app.module.ts
+MessagingModule.forRoot({
+  aws: { region: 'us-east-1', endpoint: process.env.AWS_ENDPOINT }, // endpoint só no LocalStack
+  topicArn: process.env.SNS_TOPIC_ARN!, // tópico FIFO deste serviço
+  outboxRepository: PrismaOutbox, // @Injectable que estende PrismaOutboxRepository
+  consumer: {
+    queueUrl: process.env.SQS_QUEUE_URL!,
+    processedMessageStore: PrismaProcessed, // @Injectable que estende PrismaProcessedMessageStore
+    handlers: [OrcamentoGeradoHandler, PagamentoAprovadoHandler], // MessageHandler por `type`
+  },
+  imports: [PrismaModule],
+});
+```
+
+```ts
+// caso de uso: publica NA transação (outbox) — nunca chama o SNS diretamente
+await this.prisma.$transaction(async (tx) => {
+  await tx.ordemDeServico.update(/* ... */);
+  await this.publisher.publish(
+    criarEnvelope({ type: 'os.aberta', producer: 'os-service', correlationId: os.numero, data }),
+    tx,
+  );
+});
+// o OutboxPoller entrega ao SNS em até 500 ms; o SqsConsumer do destino deduplica pelo `id`
+```
+
+- **Envelope** (`id` UUID v7, `type`, `version`, `occurredAt`, `correlationId` = número da OS, `causationId`, `producer`, `traceparent`, `data`) — `criarEnvelope` herda `correlationId` e `traceparent` do contexto da requisição.
+- **Consumer**: long polling, dedup por `id` (`processed_messages`), handler executa no contexto de correlação da mensagem (logs com o mesmo `correlationId`/`traceId` do produtor); erro ⇒ a mensagem **não** é apagada ⇒ reentrega ⇒ DLQ após `maxReceiveCount` (triagem humana, nunca descarte).
+- **Modelos Prisma** para `outbox` e `processed_messages`: ver o comentário em `PrismaOutboxRepository`.
+- **Local**: `npm run localstack:up` sobe SNS/SQS/DynamoDB com a topologia da RFC-0006 (`scripts/messaging-local.sh`); `AWS_ENDPOINT=http://localhost:4566`, credenciais `test/test`.
+
 ### Regras que o kit impõe (e por quê)
 
 - **Uma instância por processo** de `registry`, do `AsyncLocalStorage` de correlação e do `tracer-bridge`: o serviço **nunca** mantém cópias locais desses arquivos — importa do kit. Duplicar quebra a correlação log↔trace silenciosamente.
@@ -125,8 +159,8 @@ A primeira publicação usa o secret `NPM_TOKEN`. Depois que o pacote existir no
 
 ## Roadmap
 
-- **v0.2** (US-F4-01, parte 2): envelope da [ADR-0009](https://github.com/guilhermeqmaia/soat-fiap-oficina-mecanica-app/blob/main/docs/arquitetura/adr/ADR-0009-outbox-e-consumidor-idempotente.md) com validação de schema, `SnsPublisher`, `SqsConsumer` com deduplicação e DLQ, `OutboxModule` (adapter Prisma + poller), compose LocalStack.
-- **v0.3** (US-F4-15): `contracts/` gerados do AsyncAPI do hub + testes de contrato.
+- **v0.3** (US-F4-15): `contracts/` gerados do AsyncAPI do hub + validação por schema no envelope + testes de contrato.
+- Adapter de outbox via **DynamoDB Streams** para o Execução Service (US-F4-07).
 - Template de serviço (`templates/service/`) para a US-F4-04.
 
 ## Histórias
