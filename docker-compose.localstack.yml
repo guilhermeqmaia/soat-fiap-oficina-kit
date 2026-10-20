@@ -1,0 +1,18 @@
+# Emulacao local de SNS/SQS/DynamoDB (RFC-0006/RFC-0007) para desenvolvimento
+# e BDD. `npm run localstack:up` sobe e cria a topologia via init script.
+services:
+  localstack:
+    image: localstack/localstack:3
+    ports:
+      - '4566:4566'
+    environment:
+      SERVICES: sns,sqs,dynamodb
+      AWS_DEFAULT_REGION: us-east-1
+      DEBUG: 0
+    volumes:
+      - ./scripts/messaging-local.sh:/etc/localstack/init/ready.d/10-messaging.sh:ro
+    healthcheck:
+      test: ['CMD', 'awslocal', 'sqs', 'list-queues']
+      interval: 5s
+      timeout: 5s
+      retries: 20

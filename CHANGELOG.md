@@ -2,6 +2,17 @@
 
 Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) · versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [0.2.0] — 2026-10-20
+
+### Adicionado
+- `messaging`: `MessageEnvelope` + `criarEnvelope`/`validarEnvelope` (ADR-0009; UUID v7, correlacao e `traceparent` herdados do contexto), portas `MessagePublisher`/`ProcessedMessageStore`/`MessageHandler`, `SnsPublisher` (FIFO: `MessageGroupId`=correlationId, dedup id, atributos para filtro), `SqsConsumer` (long polling, dedup por id, contexto de correlacao por mensagem, falha => reentrega/DLQ), outbox transacional (`OutboxRepository`, `OutboxPublisher`, `OutboxPoller`, adapters Prisma `PrismaOutboxRepository`/`PrismaProcessedMessageStore`), `MessagingModule.forRoot`.
+- `testing`: `FakeMessagePublisher`, `InMemoryProcessedMessageStore`, `InMemoryOutboxRepository`.
+- LocalStack: `docker-compose.localstack.yml` + `scripts/messaging-local.sh` (topologia da RFC-0006).
+- Release por **Trusted Publishing** (OIDC), sem token.
+
+### Peers novos (opcionais para quem nao usa mensageria)
+- `@aws-sdk/client-sns`, `@aws-sdk/client-sqs`.
+
 ## [0.1.0] — 2026-10-19
 
 ### Adicionado
