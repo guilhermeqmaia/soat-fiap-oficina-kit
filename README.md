@@ -140,6 +140,17 @@ await this.prisma.$transaction(async (tx) => {
 - Variáveis que o kit lê por fallback: `NODE_ENV`, `LOG_LEVEL`, `DD_TRACE_ENABLED`, `DD_SERVICE`, `DD_ENV`, `DD_VERSION`, `JWT_SECRET`/`JWT_ISSUER` (só em `mintToken`). Tudo o mais é parâmetro explícito dos `forRoot`.
 - Se o serviço usa `@nestjs/throttler`, exclua `/health` e `/metrics` no `skipIf` do `ThrottlerModule` (o kit não depende do throttler).
 
+## Template de serviço
+
+`templates/service/` é o esqueleto de um microsserviço já ligado ao kit (auth, logs, métricas, health com Prisma, mensageria por env, outbox/dedup no schema, Dockerfile, `k8s/` + overlay `k8s-aws/` com NodePort para o NLB único, CI com gate de 80 % e CD para ECR/EKS, Sonar, CODEOWNERS). O CI do kit gera um serviço a cada PR e roda install → lint → typecheck → unitários → e2e → `docker build`, então o template nunca fica para trás.
+
+```bash
+scripts/new-service.sh billing ../soat-fiap-oficina-billing-service 3001 30081 "Orçamento, aprovação e pagamento"
+#                      <serviço> <destino>                           <porta> <nodePort> "<descrição>"
+```
+
+Placeholders substituídos: nome do serviço/repo/banco, porta, NodePort e descrição. `__SNS_TOPIC_ARN__`/`__SQS_QUEUE_URL__` no ConfigMap ficam para o CD preencher a partir das vars do repo.
+
 ## Desenvolvimento
 
 ```bash
@@ -161,7 +172,6 @@ A primeira publicação usa o secret `NPM_TOKEN`. Depois que o pacote existir no
 
 - **v0.3** (US-F4-15): `contracts/` gerados do AsyncAPI do hub + validação por schema no envelope + testes de contrato.
 - Adapter de outbox via **DynamoDB Streams** para o Execução Service (US-F4-07).
-- Template de serviço (`templates/service/`) para a US-F4-04.
 
 ## Histórias
 

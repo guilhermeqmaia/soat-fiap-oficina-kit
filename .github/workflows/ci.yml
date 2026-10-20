@@ -41,6 +41,40 @@ jobs:
       - name: Auditoria de dependencias
         run: npm audit --omit=dev --audit-level=high
 
+  template:
+    name: Template de servico (gera, instala, testa e builda)
+    runs-on: ubuntu-latest
+    needs: quality
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Empacotar o kit deste PR (o servico gerado testa ESTE codigo, nao o do registry)
+        run: npm ci && npm run build && npm pack --pack-destination /tmp
+      - name: Gerar servico a partir de templates/service
+        run: scripts/new-service.sh exemplo /tmp/svc 3009 30099 "Servico de exemplo"
+      - name: Instalar, gerar Prisma, lint, typecheck, unitarios (gate 80%) e build
+        working-directory: /tmp/svc
+        run: |
+          cp /tmp/guilhermeqmaia-oficina-kit-*.tgz ./kit.tgz   # fica no contexto do docker build
+          npm install --no-audit --no-fund
+          npm install --no-audit --no-fund ./kit.tgz
+          npx prisma generate
+          npm run format && npm run lint && npm run typecheck
+          npm run test:unit:cov
+          npm run build
+      - name: e2e do servico gerado (testcontainers)
+        working-directory: /tmp/svc
+        run: npm run test:integration
+      - name: docker build do servico gerado (com o kit do registry — o Dockerfile faz `npm ci` so com package*.json)
+        working-directory: /tmp/svc
+        run: |
+          rm -f kit.tgz
+          npm pkg set dependencies.@guilhermeqmaia/oficina-kit="^$(node -p "require('$GITHUB_WORKSPACE/package.json').version.replace(/\.\d+$/, '.0')")"
+          npm install --no-audit --no-fund --package-lock-only
+          docker build -t svc-exemplo:ci .
+
   sonarcloud:
     name: SonarCloud (quality gate)
     runs-on: ubuntu-latest
