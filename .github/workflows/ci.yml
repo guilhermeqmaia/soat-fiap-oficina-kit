@@ -73,7 +73,7 @@ jobs:
           # volta a dependencia para o registry e regenera o lock do zero (o lock
           # anterior aponta para o tarball local, que nao existe no contexto)
           rm -f kit.tgz package-lock.json
-          npm pkg set dependencies.@guilhermeqmaia/oficina-kit="^$(node -p "require('$GITHUB_WORKSPACE/package.json').version.replace(/\.\d+$/, '.0')")"
+          node -e "const fs=require('fs');const p=require('./package.json');p.dependencies['@guilhermeqmaia/oficina-kit']='^'+require('$GITHUB_WORKSPACE/package.json').version.replace(/\.\d+$/,'.0');fs.writeFileSync('package.json',JSON.stringify(p,null,2)+'\n')"
           npm install --no-audit --no-fund --package-lock-only
           grep -q '"resolved": "https://registry.npmjs.org/@guilhermeqmaia/oficina-kit' package-lock.json
           docker build -t svc-exemplo:ci .
