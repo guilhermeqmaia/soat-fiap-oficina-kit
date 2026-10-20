@@ -2,9 +2,9 @@
 
 [![CI](https://github.com/guilhermeqmaia/soat-fiap-oficina-kit/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/guilhermeqmaia/soat-fiap-oficina-kit/actions/workflows/ci.yml) [![Release](https://github.com/guilhermeqmaia/soat-fiap-oficina-kit/actions/workflows/release.yml/badge.svg)](https://github.com/guilhermeqmaia/soat-fiap-oficina-kit/actions/workflows/release.yml) [![npm](https://img.shields.io/npm/v/%40guilhermeqmaia%2Foficina-kit)](https://www.npmjs.com/package/@guilhermeqmaia/oficina-kit)
 
-Kit compartilhado dos microsserviços do **Sistema da Oficina Mecânica** (Tech Challenge FIAP — SOAT, Fase 4). Contém **o que é comum e não é domínio**: autenticação como _resource server_, logs JSON com correlação, métricas, health e mensageria — para que OS Service, Billing e Execução nasçam iguais e cada repositório escreva só código de negócio ([ADR-0010](https://github.com/guilhermeqmaia/soat-fiap-oficina-mecanica-app/blob/main/docs/arquitetura/adr/ADR-0010-kit-compartilhado.md)).
+Kit compartilhado dos microsserviços do **Sistema da Oficina Mecânica** (Tech Challenge FIAP — SOAT, Fase 4). Contém **o que é comum e não é domínio**: autenticação como _resource server_, logs JSON com correlação, métricas, health e mensageria — para que OS Service, Billing e Execução nasçam iguais e cada repositório escreva só código de negócio ([ADR-0010](https://github.com/guilhermeqmaia/soat-fiap-oficina-os-service/blob/main/docs/arquitetura/adr/ADR-0010-kit-compartilhado.md)).
 
-> Repositório 7 de 7. Planejamento, RFCs/ADRs, contratos de eventos (AsyncAPI) e diagramas ficam no hub: [`docs/plano-execucao-fase-4.md`](https://github.com/guilhermeqmaia/soat-fiap-oficina-mecanica-app/blob/main/docs/plano-execucao-fase-4.md).
+> Repositório 7 de 7. Planejamento, RFCs/ADRs, contratos de eventos (AsyncAPI) e diagramas ficam no hub: [`docs/plano-execucao-fase-4.md`](https://github.com/guilhermeqmaia/soat-fiap-oficina-os-service/blob/main/docs/plano-execucao-fase-4.md).
 
 ## Instalação
 
@@ -175,4 +175,4 @@ A primeira publicação usa o secret `NPM_TOKEN`. Depois que o pacote existir no
 
 ## Histórias
 
-[US-F4-01 — Kit compartilhado](https://github.com/guilhermeqmaia/soat-fiap-oficina-mecanica-app/blob/main/docs/user-stories/f4-01-kit-compartilhado.md) · [US-F4-15 — Testes de contrato](https://github.com/guilhermeqmaia/soat-fiap-oficina-mecanica-app/blob/main/docs/user-stories/f4-15-testes-de-contrato.md)
+[US-F4-01 — Kit compartilhado](https://github.com/guilhermeqmaia/soat-fiap-oficina-os-service/blob/main/docs/user-stories/f4-01-kit-compartilhado.md) · [US-F4-15 — Testes de contrato](https://github.com/guilhermeqmaia/soat-fiap-oficina-os-service/blob/main/docs/user-stories/f4-15-testes-de-contrato.md)
