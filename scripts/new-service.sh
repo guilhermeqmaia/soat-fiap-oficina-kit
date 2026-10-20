@@ -16,5 +16,8 @@ find "$DEST" -name '*.bak' -delete
 # nomes reais sao mais longos que os placeholders: reformata com o prettier do kit (mesma config)
 KIT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 [ -x "$KIT_ROOT/node_modules/.bin/prettier" ] && "$KIT_ROOT/node_modules/.bin/prettier" --config "$KIT_ROOT/.prettierrc" --write "$DEST" --log-level warn
+# package-lock.json: exigido pelo cache npm do setup-node (CI) e pelo `npm ci` da imagem.
+# Gerado sem node_modules para incluir os pacotes opcionais de TODAS as plataformas.
+if command -v npm >/dev/null; then (cd "$DEST" && npm install --package-lock-only --no-audit --no-fund >/dev/null 2>&1 && echo "package-lock.json gerado") || echo "aviso: nao foi possivel gerar o package-lock.json (rode npm install no destino)"; fi
 echo "gerado: $DEST ($NAME · porta $PORT · NodePort $NODE_PORT · banco $DB)"
 echo "proximos passos: cd $DEST && npm install && npx prisma generate && npm run typecheck && npm test"
