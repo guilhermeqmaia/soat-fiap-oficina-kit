@@ -28,14 +28,16 @@ import { OutboxRecord, OutboxRepository } from './outbox.ports';
  * }
  * ```
  */
+/*
+ * Os parametros sao `any` de proposito: o delegate gerado pelo Prisma tem tipos
+ * de entrada proprios (`OutboxCreateInput`, `InputJsonValue`...) que nao sao
+ * assinaveis a um contrato estrutural estrito em nenhuma direcao. O retorno
+ * continua tipado (`OutboxRow`) — e o que o kit consome.
+ */
 export interface OutboxDelegate {
-  create(args: { data: OutboxRow }): Promise<unknown>;
-  findMany(args: {
-    where: { status: string };
-    orderBy: { criadaEm: 'asc' };
-    take: number;
-  }): Promise<OutboxRow[]>;
-  update(args: { where: { id: string }; data: OutboxUpdateData }): Promise<unknown>;
+  create(args: { data: any }): Promise<unknown>;
+  findMany(args: any): Promise<OutboxRow[]>;
+  update(args: any): Promise<unknown>;
 }
 export type OutboxUpdateData = Partial<Omit<OutboxRow, 'tentativas'>> & {
   tentativas?: number | { increment: number };
@@ -109,8 +111,8 @@ export class PrismaOutboxRepository implements OutboxRepository<OutboxPrismaClie
 
 /** Contrato minimo para a tabela `processed_messages` (dedup do consumidor). */
 export interface ProcessedMessageDelegate {
-  findUnique(args: { where: { id: string } }): Promise<unknown | null>;
-  create(args: { data: { id: string; type: string } }): Promise<unknown>;
+  findUnique(args: any): Promise<unknown | null>;
+  create(args: { data: any }): Promise<unknown>;
 }
 export interface ProcessedMessagePrismaClient {
   processedMessage: ProcessedMessageDelegate;

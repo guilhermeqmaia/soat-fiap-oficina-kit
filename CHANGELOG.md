@@ -2,6 +2,15 @@
 
 Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) · versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [0.2.1] — 2026-10-20
+
+### Corrigido
+- `typesVersions` no `package.json`: os subpaths (`/auth`, `/messaging`...) resolvem tambem com `moduleResolution: node10` (consumidores NestJS com `module: commonjs`).
+
+### Adicionado
+- `templates/service/` + `scripts/new-service.sh`: esqueleto de microsserviço ligado ao kit (US-F4-01/US-F4-04), validado no CI do kit (gera, instala, testa, builda).
+- `release.yml` com Node 22 + npm@11 (Trusted Publishing).
+
 ## [0.2.0] — 2026-10-20
 
 ### Adicionado
