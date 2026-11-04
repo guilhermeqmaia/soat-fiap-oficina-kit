@@ -10,21 +10,24 @@
 
 <!-- bounded contexts que este serviço POSSUI e o que ele NÃO possui -->
 
-## Eventos e comandos
+## Endpoints internos e callbacks
 
-<!-- publica / consome — ver docs/contratos/asyncapi.yaml no hub -->
+<!-- o que este servico expoe para os outros (role SERVICO) e que callbacks envia ao OS Service —
+     ver docs/contratos/http-interno.md no hub -->
 
 ## Execução local
 
 ```bash
 cp .env.example .env
 npm ci && npx prisma generate
-npm run docker:up                 # Postgres próprio + LocalStack com a topologia da RFC-0006
+npm run docker:up                 # Postgres próprio
 npx prisma migrate deploy
 npm run start:dev                 # http://localhost:__PORT__/api (Swagger)
 ```
 
-Token para testar: a Lambda de auth (`POST {gateway}/auth`) ou, localmente, `mintToken` do kit (`@guilhermeqmaia/oficina-kit/testing`) com o mesmo `JWT_SECRET`.
+Token para testar: a Lambda de auth (`POST {gateway}/auth`) ou, localmente, `mintToken` do kit (`@guilhermeqmaia/oficina-kit/testing`) com o mesmo `JWT_SECRET`. Endpoints internos/callbacks (`@Roles(Role.SERVICO)`) aceitam o JWT de serviço: `mintServiceToken({ servico: 'os-service' })`.
+
+Os outros serviços são alcançados por HTTP direto (`ClienteHttpInterno` do kit): `OS_SERVICE_URL`, `BILLING_SERVICE_URL`, `EXECUCAO_SERVICE_URL` (defaults em `localhost`; no cluster, o DNS interno do ConfigMap).
 
 ## Testes e qualidade
 
@@ -45,7 +48,6 @@ CD automático (`cd-aws.yml`): `homolog` → homologação, `main` → produçã
 | `EKS_CLUSTER_NAME`, `AWS_REGION` (vars) | cluster alvo                                               |
 | `DB_SECRET_ID` (var)                    | segredo do banco **próprio** no Secrets Manager (infra-db) |
 | `JWT_SECRET_ID` (var)                   | segredo HS256 compartilhado com a Lambda                   |
-| `SNS_TOPIC_ARN`, `SQS_QUEUE_URL` (vars) | saídas do stage `messaging/` (infra-k8s)                   |
 
 O Service expõe o **NodePort `__NODE_PORT__`**, alvo do target group deste serviço no NLB interno único (ADR-0013).
 
@@ -55,6 +57,6 @@ O Service expõe o **NodePort `__NODE_PORT__`**, alvo do target group deste serv
 flowchart LR
   GW[API Gateway] -->|/__SERVICE__*| S[__SERVICE_NAME__]
   S --> DB[(Postgres __DB_NAME__)]
-  S -->|outbox → SNS| T[(oficina-__SERVICE__.fifo)]
-  Q[(__SERVICE__-comandos.fifo)] -->|SQS| S
+  OS[OS Service] -->|HTTP interno + JWT de serviço| S
+  S -->|callback POST /ordens-servico/:n/eventos| OS
 ```

@@ -43,6 +43,10 @@ export interface MessagingModuleOptions {
 }
 
 /**
+ * @deprecated Descontinuado em 0.3.0: a comunicacao entre servicos passou a ser
+ * HTTP direta (`@guilhermeqmaia/oficina-kit/http`, RFC-0008). Fica no pacote por
+ * compatibilidade, sem evolucao.
+ *
  * Mensageria do servico (ADR-0009 / RFC-0006):
  * - `MESSAGE_PUBLISHER` -> `OutboxPublisher` (casos de uso gravam na transacao);
  * - `OutboxPoller` entrega ao SNS (`BROKER_PUBLISHER` = `SnsPublisher`);

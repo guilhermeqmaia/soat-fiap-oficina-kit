@@ -54,12 +54,12 @@ jobs:
         run: npm ci && npm run build && npm pack --pack-destination /tmp
       - name: Gerar servico a partir de templates/service
         run: scripts/new-service.sh exemplo /tmp/svc 3009 30099 "Servico de exemplo"
-      - name: Instalar, gerar Prisma, lint, typecheck, unitarios (gate 80%) e build
+      - name: Instalar (kit deste PR primeiro — a versao que o template pede pode ainda nao estar publicada), gerar Prisma, lint, typecheck, unitarios (gate 80%) e build
         working-directory: /tmp/svc
         run: |
           cp /tmp/guilhermeqmaia-oficina-kit-*.tgz ./kit.tgz   # fica no contexto do docker build
-          npm install --no-audit --no-fund
           npm install --no-audit --no-fund ./kit.tgz
+          npm install --no-audit --no-fund
           npx prisma generate
           npm run format && npm run lint && npm run typecheck
           npm run test:unit:cov
@@ -67,13 +67,11 @@ jobs:
       - name: e2e do servico gerado (testcontainers)
         working-directory: /tmp/svc
         run: npm run test:integration
-      - name: docker build do servico gerado (com o kit do registry — o Dockerfile faz `npm ci` so com package*.json)
+      - name: docker build do servico gerado (com o kit deste PR — o Dockerfile faz `npm ci` so com package*.json, entao o tarball entra junto)
         working-directory: /tmp/svc
         run: |
-          rm -f kit.tgz
-          npm pkg set dependencies.@guilhermeqmaia/oficina-kit="^$(node -p "require('$GITHUB_WORKSPACE/package.json').version.replace(/\.\d+$/, '.0')")"
-          npm install --no-audit --no-fund --package-lock-only
-          docker build -t svc-exemplo:ci .
+          sed -E 's|(COPY (--chown=node:node )?package\*\.json) \./|\1 kit.tgz ./|' Dockerfile \
+            | docker build -t svc-exemplo:ci -f - .
 
   sonarcloud:
     name: SonarCloud (quality gate)

@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/guilhermeqmaia/soat-fiap-oficina-kit/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/guilhermeqmaia/soat-fiap-oficina-kit/actions/workflows/ci.yml) [![Release](https://github.com/guilhermeqmaia/soat-fiap-oficina-kit/actions/workflows/release.yml/badge.svg)](https://github.com/guilhermeqmaia/soat-fiap-oficina-kit/actions/workflows/release.yml) [![npm](https://img.shields.io/npm/v/%40guilhermeqmaia%2Foficina-kit)](https://www.npmjs.com/package/@guilhermeqmaia/oficina-kit)
 
-Kit compartilhado dos microsserviços do **Sistema da Oficina Mecânica** (Tech Challenge FIAP — SOAT, Fase 4). Contém **o que é comum e não é domínio**: autenticação como _resource server_, logs JSON com correlação, métricas, health e mensageria — para que OS Service, Billing e Execução nasçam iguais e cada repositório escreva só código de negócio ([ADR-0010](https://github.com/guilhermeqmaia/soat-fiap-oficina-os-service/blob/main/docs/arquitetura/adr/ADR-0010-kit-compartilhado.md)).
+Kit compartilhado dos microsserviços do **Sistema da Oficina Mecânica** (Tech Challenge FIAP — SOAT, Fase 4). Contém **o que é comum e não é domínio**: autenticação como _resource server_, logs JSON com correlação, métricas, health e o cliente HTTP das chamadas entre serviços — para que OS Service, Billing e Execução nasçam iguais e cada repositório escreva só código de negócio ([ADR-0010](https://github.com/guilhermeqmaia/soat-fiap-oficina-os-service/blob/main/docs/arquitetura/adr/ADR-0010-kit-compartilhado.md)).
 
 > Repositório 7 de 7. Planejamento, RFCs/ADRs, contratos de eventos (AsyncAPI) e diagramas ficam no hub: [`docs/plano-execucao-fase-4.md`](https://github.com/guilhermeqmaia/soat-fiap-oficina-os-service/blob/main/docs/plano-execucao-fase-4.md).
 
@@ -18,15 +18,16 @@ Publicado no **npmjs.org** — nenhum token é necessário para instalar (local,
 
 ## O que vem em cada subpath
 
-| Subpath      | Exporta                                                                                                                                                                                                     | Origem no monólito                               |
-| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| `/core`      | `DomainError`/`DomainErrorKind`, `DomainEvent`, `UseCase`, `EntityNotFoundError`, `NotOwnedByUserError`, `DomainExceptionFilter`, **`CoreModule`** (filtro global)                                          | `src/shared/{domain,application}`                |
-| `/auth`      | `AuthenticatedUser`, `Role`, `Cpf`, `JwtStrategy`, `JwtAuthGuard`, `RolesGuard`, `@Public`, `@Roles`, `@CurrentUser`, **`AuthModule.forRoot/forRootAsync`**                                                 | `src/auth/` (só a parte de validação — US-F3-03) |
-| `/logging`   | **`LoggerModule.forRoot/forRootAsync`** (pino JSON, redação, `correlationId`/`traceId` em toda linha), `CorrelationIdMiddleware`, `getCorrelationId`, `tracer-bridge`, `maskCpfCnpj`, `redactSensitiveText` | `src/shared/infrastructure/logging`              |
-| `/metrics`   | `registry` (singleton), `httpDuration`, **`MetricsModule.forRoot({ serviceName })`** (`/metrics` + interceptor), `iniciarTracing`                                                                           | `src/observabilidade/`                           |
-| `/health`    | **`HealthModule.forRoot({ indicators })`**, `HealthIndicator`                                                                                                                                               | `src/health/` (indicador Prisma fica no serviço) |
-| `/messaging` | `DomainEventPublisher` (porta), `DOMAIN_EVENT_PUBLISHER`, `EventEmitterDomainEventPublisher`, **`InProcessMessagingModule`**                                                                                | `src/shared/shared.module.ts`                    |
-| `/testing`   | `mintToken` (reproduz o JWT da Lambda), `FakeDomainEventPublisher`                                                                                                                                          | `src/auth/testing/`                              |
+| Subpath      | Exporta                                                                                                                                                                                                                                      | Origem no monólito                               |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `/core`      | `DomainError`/`DomainErrorKind`, `DomainEvent`, `UseCase`, `EntityNotFoundError`, `NotOwnedByUserError`, `DomainExceptionFilter`, **`CoreModule`** (filtro global)                                                                           | `src/shared/{domain,application}`                |
+| `/auth`      | `AuthenticatedUser`, `Role` (inclui `SERVICO`), `Cpf`, `JwtStrategy`, `JwtAuthGuard`, `RolesGuard`, `@Public`, `@Roles`, `@CurrentUser`, **`AuthModule.forRoot/forRootAsync`**                                                               | `src/auth/` (só a parte de validação — US-F3-03) |
+| `/logging`   | **`LoggerModule.forRoot/forRootAsync`** (pino JSON, redação, `correlationId`/`traceId` em toda linha), `CorrelationIdMiddleware`, `getCorrelationId`, `tracer-bridge`, `maskCpfCnpj`, `redactSensitiveText`                                  | `src/shared/infrastructure/logging`              |
+| `/metrics`   | `registry` (singleton), `httpDuration`, **`MetricsModule.forRoot({ serviceName })`** (`/metrics` + interceptor), `iniciarTracing`                                                                                                            | `src/observabilidade/`                           |
+| `/health`    | **`HealthModule.forRoot({ indicators })`**, `HealthIndicator`                                                                                                                                                                                | `src/health/` (indicador Prisma fica no serviço) |
+| `/http`      | **`HttpInternoModule.forRoot/forRootAsync`**, `ClienteHttpInterno` (`post/get/delete` com JWT de serviço, correlação, timeout e retry), `HttpInternoError`, `EnvelopeHttp`/`criarEnvelopeHttp`/`validarEnvelopeHttp`, `emitirTokenDeServico` | novo (Fase 4, 03/11/2026)                        |
+| `/messaging` | `DomainEventPublisher` (porta), `DOMAIN_EVENT_PUBLISHER`, `EventEmitterDomainEventPublisher`, **`InProcessMessagingModule`** — o restante (SNS/SQS/outbox) está **descontinuado**                                                            | `src/shared/shared.module.ts`                    |
+| `/testing`   | `mintToken` (reproduz o JWT da Lambda), `mintServiceToken` (JWT de serviço), `FakeDomainEventPublisher`                                                                                                                                      | `src/auth/testing/`                              |
 
 A raiz (`@guilhermeqmaia/oficina-kit`) reexporta tudo exceto `/testing`.
 
@@ -99,39 +100,55 @@ export const osTransicoes = new Counter({
 });
 ```
 
-### Mensageria (ADR-0009 / RFC-0006)
+### Comunicação HTTP entre os serviços (decisão de 03/11/2026 — RFC-0008)
+
+Os serviços conversam por **HTTP direto** pelo DNS interno do cluster (`http://execucao-service:3002`,
+`http://billing-service:3001`), sem passar pelo API Gateway. O kit entrega o cliente, o JWT de serviço e o
+envelope dos callbacks; a especificação completa (endpoints, respostas = eventos, callbacks, retry,
+idempotência) está no hub em [`docs/contratos/http-interno.md`](https://github.com/guilhermeqmaia/soat-fiap-oficina-os-service/blob/main/docs/contratos/http-interno.md).
 
 ```ts
-// app.module.ts
-MessagingModule.forRoot({
-  aws: { region: 'us-east-1', endpoint: process.env.AWS_ENDPOINT }, // endpoint só no LocalStack
-  topicArn: process.env.SNS_TOPIC_ARN!, // tópico FIFO deste serviço
-  outboxRepository: PrismaOutbox, // @Injectable que estende PrismaOutboxRepository
-  consumer: {
-    queueUrl: process.env.SQS_QUEUE_URL!,
-    processedMessageStore: PrismaProcessed, // @Injectable que estende PrismaProcessedMessageStore
-    handlers: [OrcamentoGeradoHandler, PagamentoAprovadoHandler], // MessageHandler por `type`
-  },
-  imports: [PrismaModule],
+// app.module.ts — o modulo e GLOBAL: qualquer modulo injeta ClienteHttpInterno sem reimportar
+HttpInternoModule.forRootAsync({
+  inject: [ConfigService],
+  useFactory: (c) => ({
+    servico: 'os-service', // `sub` do JWT de servico
+    jwtSecret: c.getOrThrow('JWT_SECRET'), // mesmo segredo da Lambda — o destino valida com o AuthModule
+    timeoutMs: 5000, // por tentativa (default)
+    tentativas: 3, // default; backoff 200 ms, 800 ms, 3 s
+  }),
 });
 ```
 
 ```ts
-// caso de uso: publica NA transação (outbox) — nunca chama o SNS diretamente
-await this.prisma.$transaction(async (tx) => {
-  await tx.ordemDeServico.update(/* ... */);
-  await this.publisher.publish(
-    criarEnvelope({ type: 'os.aberta', producer: 'os-service', correlationId: os.numero, data }),
-    tx,
-  );
-});
-// o OutboxPoller entrega ao SNS em até 500 ms; o SqsConsumer do destino deduplica pelo `id`
+// adapter de saida (infrastructure): a resposta sincrona vira o evento da saga
+const r = await this.http.post(`${execucaoUrl}/execucao/ordens`, body, { correlationId: numeroOS });
+// r.status === 201, r.body === { numeroOS, posicaoFila }  ≙ execucao.enfileirada
+try { ... } catch (e) {
+  if (e instanceof HttpInternoError && e.status === 409) {
+    /* evento de falha: execucao.recusada com e.body.motivo */
+  }
+}
 ```
 
-- **Envelope** (`id` UUID v7, `type`, `version`, `occurredAt`, `correlationId` = número da OS, `causationId`, `producer`, `traceparent`, `data`) — `criarEnvelope` herda `correlationId` e `traceparent` do contexto da requisição.
-- **Consumer**: long polling, dedup por `id` (`processed_messages`), handler executa no contexto de correlação da mensagem (logs com o mesmo `correlationId`/`traceId` do produtor); erro ⇒ a mensagem **não** é apagada ⇒ reentrega ⇒ DLQ após `maxReceiveCount` (triagem humana, nunca descarte).
-- **Modelos Prisma** para `outbox` e `processed_messages`: ver o comentário em `PrismaOutboxRepository`.
-- **Local**: `npm run localstack:up` sobe SNS/SQS/DynamoDB com a topologia da RFC-0006 (`scripts/messaging-local.sh`); `AWS_ENDPOINT=http://localhost:4566`, credenciais `test/test`.
+- **Cabeçalhos** em toda chamada: `Authorization: Bearer <JWT role SERVICO, sub = nome do serviço>` (emitido
+  localmente com `jsonwebtoken`, cache de 50 min), `x-correlation-id` (o informado ou o do contexto de
+  correlação do `logging`), `traceparent` quando há APM ativo.
+- **Retry** só para `5xx`, timeout e erro de rede: 3 tentativas com backoff exponencial (200 ms, 800 ms, 3 s).
+  `4xx` não se repete (409 = recusa de negócio). Esgotadas as tentativas, `HttpInternoError` traz `status`
+  (ausente em timeout/rede), `body` da última resposta e `tentativas`.
+- **Callbacks** (`POST /ordens-servico/{numero}/eventos`): corpo = `EnvelopeHttp` (`id` v7, `type`, `version`,
+  `occurredAt`, `producer`, `data`) montado com `criarEnvelopeHttp` — sem `correlationId` no corpo (é o
+  `{numero}` do path e o cabeçalho). O destino deduplica pelo `id` (`processed_messages`).
+- **Autorização**: endpoints internos e callbacks usam `@Roles(Role.SERVICO)`; nos testes, `mintServiceToken`
+  (`/testing`) emite o mesmo token.
+
+### Mensageria (descontinuada)
+
+`MessagingModule`, `SnsPublisher`, `SqsConsumer`, outbox e `scripts/messaging-local.sh` (LocalStack) **continuam
+no pacote por compatibilidade**, mas não recebem evolução: a mensageria SNS/SQS foi substituída pela comunicação
+HTTP acima (RFC-0008). `InProcessMessagingModule` e o `DomainEventPublisher` (eventos de domínio dentro do
+processo) continuam válidos e em uso.
 
 ### Regras que o kit impõe (e por quê)
 
@@ -142,14 +159,14 @@ await this.prisma.$transaction(async (tx) => {
 
 ## Template de serviço
 
-`templates/service/` é o esqueleto de um microsserviço já ligado ao kit (auth, logs, métricas, health com Prisma, mensageria por env, outbox/dedup no schema, Dockerfile, `k8s/` + overlay `k8s-aws/` com NodePort para o NLB único, CI com gate de 80 % e CD para ECR/EKS, Sonar, CODEOWNERS). O CI do kit gera um serviço a cada PR e roda install → lint → typecheck → unitários → e2e → `docker build`, então o template nunca fica para trás.
+`templates/service/` é o esqueleto de um microsserviço já ligado ao kit (auth, logs, métricas, health com Prisma, `HttpInternoModule` + URLs dos outros serviços por env, `processed_messages` para dedup de callbacks no schema, Dockerfile, `k8s/` + overlay `k8s-aws/` com NodePort para o NLB único, CI com gate de 80 % e CD para ECR/EKS, Sonar, CODEOWNERS). O CI do kit gera um serviço a cada PR e roda install → lint → typecheck → unitários → e2e → `docker build`, então o template nunca fica para trás.
 
 ```bash
 scripts/new-service.sh billing ../soat-fiap-oficina-billing-service 3001 30081 "Orçamento, aprovação e pagamento"
 #                      <serviço> <destino>                           <porta> <nodePort> "<descrição>"
 ```
 
-Placeholders substituídos: nome do serviço/repo/banco, porta, NodePort e descrição. `__SNS_TOPIC_ARN__`/`__SQS_QUEUE_URL__` no ConfigMap ficam para o CD preencher a partir das vars do repo.
+Placeholders substituídos: nome do serviço/repo/banco, porta, NodePort e descrição. As URLs internas dos outros serviços (`OS_SERVICE_URL`, `BILLING_SERVICE_URL`, `EXECUCAO_SERVICE_URL`) já vêm no ConfigMap com o DNS do cluster.
 
 ## Desenvolvimento
 
@@ -157,7 +174,7 @@ Placeholders substituídos: nome do serviço/repo/banco, porta, NodePort e descr
 npm ci
 npm run typecheck && npm run lint && npm run format
 npm run test:cov        # gate de 80% (jest.config.js)
-npm run pack:smoke      # build + npm pack + instala o tarball num projeto vazio e importa os 8 subpaths
+npm run pack:smoke      # build + npm pack + instala o tarball num projeto vazio e importa os 9 subpaths
 ```
 
 ## Publicação
@@ -170,8 +187,8 @@ A primeira publicação usa o secret `NPM_TOKEN`. Depois que o pacote existir no
 
 ## Roadmap
 
-- **v0.3** (US-F4-15): `contracts/` gerados do AsyncAPI do hub + validação por schema no envelope + testes de contrato.
-- Adapter de outbox via **DynamoDB Streams** para o Execução Service (US-F4-07).
+- Testes de contrato (US-F4-15) sobre os endpoints/callbacks HTTP da `docs/contratos/http-interno.md`.
+- Remoção definitiva do módulo `messaging` (SNS/SQS) numa versão major.
 
 ## Histórias
 

@@ -1,5 +1,5 @@
-// Banco PROPRIO deste servico (RFC-0004). Comece pelos modelos de infraestrutura
-// do kit (outbox + dedup, ADR-0009) e adicione os agregados do dominio abaixo.
+// Banco PROPRIO deste servico (RFC-0004). Comece pelo modelo de infraestrutura
+// abaixo (dedup de callbacks) e adicione os agregados do dominio em seguida.
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -9,27 +9,13 @@ datasource db {
   provider = "postgresql"
 }
 
-/// Outbox transacional (ADR-0009) — contrato do PrismaOutboxRepository do kit.
-model Outbox {
-  id            String    @id
-  type          String
-  correlationId String    @map("correlation_id")
-  envelope      Json
-  status        String    @default("PENDENTE")
-  tentativas    Int       @default(0)
-  criadaEm      DateTime  @default(now()) @map("criada_em")
-  enviadaEm     DateTime? @map("enviada_em")
-  ultimoErro    String?   @map("ultimo_erro")
-
-  @@index([status, criadaEm])
-  @@map("outbox")
-}
-
-/// Deduplicacao do consumidor (ADR-0009) — contrato do PrismaProcessedMessageStore.
+/// Deduplicacao de callbacks/webhooks recebidos (comunicacao HTTP interna, RFC-0008):
+/// `id` do envelope ja aplicado. Repeticao devolve `200 { aplicado: false, duplicado: true }`.
 model ProcessedMessage {
   id           String   @id
   type         String
   processadaEm DateTime @default(now()) @map("processada_em")
 
+  @@index([processadaEm])
   @@map("processed_messages")
 }
