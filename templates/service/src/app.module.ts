@@ -8,12 +8,13 @@ import { CorrelationIdMiddleware, LoggerModule } from '@guilhermeqmaia/oficina-k
 import { MetricsModule } from '@guilhermeqmaia/oficina-kit/metrics';
 import { HealthModule } from '@guilhermeqmaia/oficina-kit/health';
 import { InProcessMessagingModule } from '@guilhermeqmaia/oficina-kit/messaging';
+import { HttpInternoModule } from '@guilhermeqmaia/oficina-kit/http';
 import { validateEnv } from './config/env.validation';
-import { SERVICE_NAME } from './config/service-name';
+import { PRODUCER_NAME, SERVICE_NAME } from './config/service-name';
+import { httpInternoConfig } from './config/servicos.config';
 import { THROTTLER_LIMIT, THROTTLER_TTL_MS, shouldSkipThrottling } from './config/throttler.config';
 import { PrismaModule } from './prisma/prisma.module';
 import { PrismaHealthIndicator } from './health/prisma-health.indicator';
-import { messagingModule } from './messaging/messaging.config';
 
 @Module({
   imports: [
@@ -37,8 +38,19 @@ import { messagingModule } from './messaging/messaging.config';
     }),
     MetricsModule.forRoot({ serviceName: SERVICE_NAME }),
     HealthModule.forRoot({ imports: [PrismaModule], indicators: [PrismaHealthIndicator] }),
+    // Eventos de dominio dentro do processo (listeners @OnEvent).
     InProcessMessagingModule,
-    ...messagingModule(),
+    // Chamadas HTTP para os outros servicos (RFC-0008): JWT de servico, correlacao, retry.
+    // Enderecos: `urlsDosServicos()` em config/servicos.config.ts.
+    HttpInternoModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (c: ConfigService) => ({
+        servico: PRODUCER_NAME,
+        jwtSecret: c.getOrThrow<string>('JWT_SECRET'),
+        issuer: c.get<string>('JWT_ISSUER'),
+        ...httpInternoConfig(),
+      }),
+    }),
     ThrottlerModule.forRoot({
       throttlers: [{ ttl: THROTTLER_TTL_MS, limit: THROTTLER_LIMIT }],
       skipIf: (context) => shouldSkipThrottling(process.env, context),

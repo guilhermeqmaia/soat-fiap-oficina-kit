@@ -20,7 +20,7 @@ import {
   DomainEventPublisher,
 } from './core/application/domain-event-publisher';
 import { DomainEvent } from './core/domain/domain-event';
-import { mintToken } from './testing/token-factory';
+import { mintServiceToken, mintToken } from './testing/token-factory';
 import { FakeDomainEventPublisher } from './testing/fake-domain-event-publisher';
 
 /**
@@ -51,6 +51,9 @@ class TestController {
   }
   @Get('admin') @Roles(Role.ADMIN) admin() {
     return { admin: true };
+  }
+  @Get('servico') @Roles(Role.SERVICO) servico(@CurrentUser() user: AuthenticatedUser) {
+    return { servico: user.id };
   }
   @Get('nao-existe') naoExiste() {
     throw new EntityNotFoundError('Coisa', '42');
@@ -109,6 +112,20 @@ describe('kit — modulos integrados num Nest real', () => {
       .get('/t/admin')
       .set('Authorization', token(Role.ADMIN))
       .expect(200);
+  });
+
+  it('Role.SERVICO: token de servico (mintServiceToken) entra em rotas internas; usuarios nao', async () => {
+    await request(app.getHttpServer())
+      .get('/t/servico')
+      .set('Authorization', token(Role.ADMIN))
+      .expect(403);
+    await request(app.getHttpServer())
+      .get('/t/servico')
+      .set(
+        'Authorization',
+        `Bearer ${mintServiceToken({ servico: 'execucao-service' }, { secret: SECRET })}`,
+      )
+      .expect(200, { servico: 'execucao-service' });
   });
 
   it('DomainError vira HTTP pelo filtro global do CoreModule', async () => {

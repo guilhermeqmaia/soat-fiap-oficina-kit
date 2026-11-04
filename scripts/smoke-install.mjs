@@ -25,6 +25,7 @@ const subpaths = [
   '/metrics',
   '/health',
   '/messaging',
+  '/http',
   '/testing',
 ];
 const script = subpaths

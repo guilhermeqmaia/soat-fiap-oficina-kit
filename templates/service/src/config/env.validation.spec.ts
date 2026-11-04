@@ -17,3 +17,16 @@ describe('validateEnv', () => {
   it('exige DATABASE_URL postgres', () =>
     expect(() => validateEnv({ ...ok, DATABASE_URL: 'mysql://x' })).toThrow(/DATABASE_URL/));
 });
+
+describe('validateEnv — URLs internas (comunicacao HTTP entre servicos)', () => {
+  it('aceita URLs http(s) e vazio', () => {
+    expect(() =>
+      validateEnv({ ...ok, BILLING_SERVICE_URL: 'http://billing-service:3001' }),
+    ).not.toThrow();
+    expect(() => validateEnv({ ...ok, EXECUCAO_SERVICE_URL: '' })).not.toThrow();
+  });
+  it('rejeita valor que nao e URL', () =>
+    expect(() => validateEnv({ ...ok, OS_SERVICE_URL: 'oficina-app:3000' })).toThrow(
+      /OS_SERVICE_URL/,
+    ));
+});
